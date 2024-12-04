@@ -1,7 +1,18 @@
+require 'bundler/setup'
+
 $LOAD_PATH.unshift(File.expand_path('fastlane/lib', __dir__))
 $LOAD_PATH.unshift(File.expand_path('fastlane_core/lib', __dir__))
 $LOAD_PATH.unshift(File.expand_path('spaceship/lib', __dir__))
 $LOAD_PATH.unshift(File.expand_path('credentials_manager/lib', __dir__))
+
+vendor_bundle_path = File.expand_path('vendor/bundle', __dir__)
+
+# Find all 'lib' directories under vendor/bundle
+lib_dirs = Dir.glob(File.join(vendor_bundle_path, '**', 'lib'))
+# Add each 'lib' directory to $LOAD_PATH
+lib_dirs.each do |lib_dir|
+  $LOAD_PATH.unshift(lib_dir) unless $LOAD_PATH.include?(lib_dir)
+end
 
 require_relative 'spaceship/lib/spaceship'
 require 'zip'
