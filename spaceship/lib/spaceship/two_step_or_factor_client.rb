@@ -1,10 +1,11 @@
 require_relative 'globals'
 require_relative 'tunes/tunes_client'
+require_relative 'poll_auth_code'
 
 module Spaceship
   class Client
     def handle_two_step_or_factor(response)
-      raise "2FA can only be performed in interactive mode" if ENV["SPACESHIP_ONLY_ALLOW_INTERACTIVE_2FA"] == "true" && ENV["FASTLANE_IS_INTERACTIVE"] == "false"
+      # raise "2FA can only be performed in interactive mode" if ENV["SPACESHIP_ONLY_ALLOW_INTERACTIVE_2FA"] == "true" && ENV["FASTLANE_IS_INTERACTIVE"] == "false"
       # extract `x-apple-id-session-id` and `scnt` from response, to be used by `update_request_headers`
       @x_apple_id_session_id = response["x-apple-id-session-id"]
       @scnt = response["scnt"]
@@ -168,6 +169,7 @@ module Spaceship
         puts("")
 
         code = ask_for_2fa_code("Please enter the #{code_length} digit code:")
+        puts("Receved code: #{code}")
         code_type = 'trusteddevice'
         body = { "securityCode" => { "code" => code.to_s } }.to_json
 
@@ -233,7 +235,9 @@ module Spaceship
 
     # extracted into its own method for testing
     def ask_for_2fa_code(text)
-      ask(text)
+      puts(text)
+      number = ENV["SPACESHIP_2FA_SMS_DEFAULT_PHONE_NUMBER"]
+      return retrieve_verification_code(number)
     end
 
     # extracted into its own method for testing

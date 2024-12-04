@@ -1,4 +1,10 @@
 require "securerandom"
+require 'faraday'
+require 'json'
+require 'net/http'
+require 'uri'
+require 'zip'
+require 'base64'
 require_relative '../client'
 require_relative '../du/du_client'
 require_relative '../du/upload_file'
@@ -326,6 +332,89 @@ module Spaceship
       parse_response(r, 'data')
     end
 
+    def review_submissions(app_id)
+      r = request(:get, "https://appstoreconnect.apple.com/iris/v1/apps/#{app_id}/reviewSubmissions?include=appStoreVersionForReview,items&limit\[items\]=1")
+      return parse_response(r, 'data')
+    end
+
+    def review_submission_threads(submission_id)
+      r = request(:get, "https://appstoreconnect.apple.com/iris/v1/resolutionCenterThreads?filter\[reviewSubmission\]=#{submission_id}&include=reviewSubmission")
+      return parse_response(r, 'data')
+    end
+
+    def review_submission_thread_messages(thread_id)
+      r = request(:get, "https://appstoreconnect.apple.com/iris/v1/resolutionCenterThreads/#{thread_id}/resolutionCenterMessages?include=fromActor,rejections,resolutionCenterMessageAttachments&limit\[rejections\]=100&limit\[resolutionCenterMessageAttachments\]=1000")
+      return parse_response(r, 'data')
+    end
+
+    def fetch_rejectionDatas_if_needed(message, thread_id)
+      def extractReasons(item)
+        res = ''
+        item['attributes']['reasons'].map do |reason|
+          res += reason['reasonSection'] + ' ' + reason['reasonDescription'] + '\n'
+        end
+        return res
+      end
+
+      def extractAttachments(item, included)
+        attachmentIds = item['relationships']['rejectionAttachments']['data'].select { |i| i['type'] == 'resolutionCenterMessageAttachments' }.map { |i| i['id'] }
+        attachments = attachmentIds.map do |id|
+          attributes = included.find { |i| i['id'] == id }['attributes']
+          if attributes['downloadUrl'] && attributes['fileName']
+            attributes = { url: attributes['downloadUrl'], filename: attributes['fileName'] }
+          end
+          attributes
+        end
+        zip = download_files_and_zip(attachments)
+        return zip
+      end
+
+      rejectionDatas = message['relationships']['rejections']['data']
+      if non_empty_array?(rejectionDatas)
+        result = []
+        rejectionDatas.each do |rejection|
+          r = request(:get, "https://appstoreconnect.apple.com/iris/v1/#{rejection['type']}?filter\[resolutionCenterMessage.resolutionCenterThread\]=#{thread_id}&include=appCustomProductPageVersion,appEvent,appStoreVersion,appStoreVersionExperiment,build,appBundleVersion,rejectionAttachments&limit=500&limit\[rejectionAttachments\]=1000")
+          data = parse_response(r, 'data')
+          included = parse_response(r, 'included')
+          data.each do |item|
+            reasons = extractReasons(item)
+            attachments = extractAttachments(item, included)
+
+            result << { reasons: reasons, attachments: attachments }
+          end
+        end
+        return result
+      end
+      return nil
+    end
+
+    def non_empty_array?(object)
+      object.kind_of?(Array) && !object.empty?
+    end
+
+    def download_files_and_zip(urls)
+      zip_data = StringIO.new
+    
+      # Open a new ZIP archive in memory
+      Zip::OutputStream.write_buffer(zip_data) do |zip|
+        urls.each do |item|
+          uri = URI(item[:url])
+    
+          # Download the file
+          response = Net::HTTP.get(uri)
+    
+          # Add the file to the ZIP archive
+          file_name = item[:filename]
+          zip.put_next_entry(file_name)
+          zip.write(response)
+        end
+      end
+    
+      # Ensure the zip_data is set to the beginning
+      zip_data.rewind
+      Base64.strict_encode64(zip_data.read)
+    end
+    
     def bundle_details(app_id)
       r = request(:get, "ra/appbundles/metadetail/#{app_id}")
       parse_response(r, 'data')
