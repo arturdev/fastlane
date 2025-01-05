@@ -430,6 +430,62 @@ module Spaceship
       handle_itc_response(r.body)
     end
 
+    def fetch_analytics_impressions(app_id, startTime, endTime)
+      fetch_olympus_session
+      data = {
+        "adamId": [app_id],
+        "measures": ["impressionsTotal"],
+        "frequency": "day",
+        "startTime": startTime,
+        "endTime": endTime,
+        "group": {
+          "metric": "impressionsTotal",
+          "dimension": "storefront",
+          "rank": "DESCENDING",
+          "limit": 10
+        }
+      }
+      r = request(:post) do |req|
+        req.url("https://appstoreconnect.apple.com/analytics/api/v1/data/timeseries")
+        req.body = data.to_json
+        req.headers['Content-Type'] = 'application/json'
+        req.headers['x-apple-aa-ui-v'] = '2442.0.0'
+        req.headers['Priority'] = 'u=3, i'
+        req.headers['X-Requested-By'] = 'appstoreconnect.apple.com'
+        req.headers['Sec-Fetch-Dest'] = 'empty'
+      end
+      res = parse_response(r, 'results')
+      return res
+    end
+
+    def fetch_analytics_downloads(app_id, startTime, endTime)
+      fetch_olympus_session
+      data = {
+        "adamId": [app_id],
+        "measures": ["totalDownloads"],
+        "frequency": "day",
+        "startTime": startTime,
+        "endTime": endTime,
+        "group": {
+          "metric": "totalDownloads",
+          "dimension": "storefront",
+          "rank": "DESCENDING",
+          "limit": 10
+        }
+      }
+      r = request(:post) do |req|
+        req.url("https://appstoreconnect.apple.com/analytics/api/v1/data/timeseries")
+        req.body = data.to_json
+        req.headers['Content-Type'] = 'application/json'
+        req.headers['x-apple-aa-ui-v'] = '2442.0.0'
+        req.headers['Priority'] = 'u=3, i'
+        req.headers['X-Requested-By'] = 'appstoreconnect.apple.com'
+        req.headers['Sec-Fetch-Dest'] = 'empty'
+      end
+      res = parse_response(r, 'results')
+      return res
+    end
+
     # Creates a new application on App Store Connect
     # @param name (String): The name of your app as it will appear on the App Store.
     #   This can't be longer than 255 characters.
