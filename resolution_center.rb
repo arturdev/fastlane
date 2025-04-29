@@ -1,4 +1,5 @@
 require 'bundler/setup'
+require 'json'
 
 $LOAD_PATH.unshift(File.expand_path('fastlane/lib', __dir__))
 $LOAD_PATH.unshift(File.expand_path('fastlane_core/lib', __dir__))
@@ -76,11 +77,12 @@ apps = Spaceship::ConnectAPI::App.all
 puts(apps)
 puts('apps fetched')
 subs = client.review_submissions(apps[0].id)
-puts('subbs fetched')
-sub_id = subs[0].id
+puts('subbs fetched.')
+puts(subs.to_json)
+sub_id = subs[0]["id"]
 threads = client.review_submission_threads(sub_id)
 puts('threads fetched')
-threadId = threads[0].id
+threadId = threads[0]["id"]
 messages = client.review_submission_thread_messages(threadId)
 puts('Fetched messages')
 message = messages.find do |item|
