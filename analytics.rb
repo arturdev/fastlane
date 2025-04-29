@@ -73,14 +73,20 @@ def upload_to_server(params, server_url)
   response.body
 end
 
-client = Spaceship::TunesClient.new
-client.login(options[:email], options[:password])
-apps = client.applications
+tunesClient = Spaceship::TunesClient.new
+tunesClient.login(options[:email], options[:password])
+puts('logged in to tunes client.')
+Spaceship::ConnectAPI.login(options[:email], options[:password])
+puts('logged in to connect Api.')
+
+client = Spaceship::ConnectAPI.client.tunes_client
+
+apps = Spaceship::ConnectAPI::App.all
 
 startTime = options[:start_time] || (Date.today << 1).strftime("%Y-%m-%dT00:00:00Z")
 endTime = options[:end_time] || Time.now.utc.strftime('%Y-%m-%dT00:00:00Z')
-impressions = client.fetch_analytics_impressions(apps[0]['adamId'], startTime, endTime)
-downloads = client.fetch_analytics_downloads(apps[0]['adamId'], startTime, endTime)
+impressions = client.fetch_analytics_impressions(apps[0].id, startTime, endTime)
+downloads = client.fetch_analytics_downloads(apps[0].id, startTime, endTime)
 
 upload_to_server({
   impressions: impressions,

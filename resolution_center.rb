@@ -39,7 +39,7 @@ OptionParser.new do |opts|
 
   opts.on("-bBASEURL", "--base_url=BASEURL", "Specify baseUrl") do |bu|
     options[:baseUrl] = bu
-  end  
+  end
 end.parse!
 
 ENV["SPACESHIP_2FA_SMS_DEFAULT_PHONE_NUMBER"] = options[:number]
@@ -64,13 +64,23 @@ def upload_to_server(params, server_url)
   response.body
 end
 
-client = Spaceship::TunesClient.new
-client.login(options[:email], options[:password])
-apps = client.applications
-subs = client.review_submissions(apps[0]['adamId'])
-sub_id = subs[0]['id']
+tunesClient = Spaceship::TunesClient.new
+tunesClient.login(options[:email], options[:password])
+puts('logged in to tunes client.')
+Spaceship::ConnectAPI.login(options[:email], options[:password])
+puts('logged in to connect Api.')
+
+client = Spaceship::ConnectAPI.client.tunes_client
+puts('logged in. fetching apps')
+apps = Spaceship::ConnectAPI::App.all
+puts(apps)
+puts('apps fetched')
+subs = client.review_submissions(apps[0].id)
+puts('subbs fetched')
+sub_id = subs[0].id
 threads = client.review_submission_threads(sub_id)
-threadId = threads[0]['id']
+puts('threads fetched')
+threadId = threads[0].id
 messages = client.review_submission_thread_messages(threadId)
 puts('Fetched messages')
 message = messages.find do |item|

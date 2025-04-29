@@ -3,10 +3,11 @@
   "configurations": [
     {
       "type": "rdbg",
-      "name": "Debug Ruby Program",
+      "name": "Debug Ruby Script with Arguments",
       "request": "launch",
-      "args": [],
+      "script": "${workspaceFolder}/resolution_center.rb",
+      "args": ["--number=\"+123123123\"", "--email=\"example.com\"", "--password=\"password\"", "--base_url=\"https://example.com\""],
       "cwd": "${workspaceFolder}"
     }
-  ]
+   ]
 }
