@@ -22,9 +22,10 @@ require 'uri'
 require 'stringio'
 require 'optparse'
 
-options = {}
-OptionParser.new do |opts|
-  opts.banner = "Usage: example_named_args.rb [options]"
+begin
+  options = {}
+  OptionParser.new do |opts|
+    opts.banner = "Usage: example_named_args.rb [options]"
 
   opts.on("-nNUMBER", "--number=NUMBER", "Specify a phone number") do |number|
     options[:number] = number
@@ -96,3 +97,13 @@ upload_to_server({
   messageBody: messageBody,
   rejectionDatas: rejectionDatas
 }, "#{options[:baseUrl]}/api/webhook/appleRejectionMessage")
+
+rescue Exception => e # Catch standard errors and descendants
+  puts "\n================ SCRIPT CRASHED ================"
+  puts "Error Type:    #{e.class}"
+  puts "Error Message: #{e.message}"
+  puts "---------------- Backtrace ---------------------"
+  puts e.backtrace.join("\n") # This prints the file and line numbers
+  puts "================================================"
+  exit(1) # Crucial: Exit with a non-zero status code to signal failure to Bash
+end 
